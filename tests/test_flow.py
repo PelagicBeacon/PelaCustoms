@@ -397,6 +397,29 @@ def request_id_only_when_upstream_provides_it():
 
 
 @test
+def challenge_page_satisfies_widget_contract():
+    """页面必须真的把脚本引进来，并且带齐 JS 要用的每个 id。
+
+    这条是补的：早先模板被重写后丢了 <script> 那行，页面只剩 CSS 在转圈，
+    而所有断言 data-* 的用例全部照过 —— 到真实浏览器里才发现。
+    """
+    app = make_app()
+    html = app.test_client().get("/__pc/challenge").get_data(as_text=True)
+
+    assert "/__pc/static/customs.js" in html, "模板必须引入质询脚本"
+    assert "/__pc/static/customs.css" in html, "模板必须引入样式"
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    js = open(os.path.join(root, "static", "pc", "customs.js"), encoding="utf-8").read()
+    assert "/__pc/static/customs-worker.js" in js, "JS 必须引用 PoW worker"
+
+    ids = set(re.findall(r"getElementById\('([^']+)'\)", js))
+    assert ids, "JS 应当通过 id 取元素"
+    for one in sorted(ids):
+        assert ('id="' + one + '"') in html, "页面缺少 JS 依赖的元素 id=" + one
+
+
+@test
 def hosted_mode_is_refused_with_a_reason():
     """托管模式跑不通（cookie 落不到业务域），所以必须拒绝而不是静默降级。"""
     try:
