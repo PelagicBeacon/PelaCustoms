@@ -51,6 +51,11 @@ class Decision:
 
     def headers(self) -> dict:
         h = {"Cache-Control": "no-store", "X-PC-Reason": self.reason}
+        if self.status != 200:
+            # 只在拒绝时出现。API 模式靠它区分「判定子请求拒绝」与「后端自己返回
+            # 的 401」：少了这个区分，应用层的登录过期会被误认成需要质询，
+            # 前端就会陷入「质询 → 重试 → 仍是 401 → 再次质询」的死循环。
+            h["X-PC-Deny"] = "1"
         if self.level:
             h["X-PC-Level"] = str(self.level)
         if self.sitekey:

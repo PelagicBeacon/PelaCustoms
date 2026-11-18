@@ -212,6 +212,26 @@ def full_flow():
 
 
 @test
+def deny_header_marks_a_challenge_not_a_backend_401():
+    """X-PC-Deny 只在拒绝时出现。
+
+    API 模式靠它把「判定子请求拒绝」和「后端自己返回的 401」分开：
+    混为一谈的话，应用层的登录过期会被误认成需要质询，前端绕过质询后
+    重试仍是 401，再次触发质询，形成死循环。
+    """
+    c = make_app().test_client()
+
+    denied = _auth(c, "/api/search", "POST")
+    assert denied.status_code == 401
+    assert denied.headers.get("X-PC-Deny") == "1"
+
+    # 放行时不能带这个头，否则后端自己的 401 前端也会误判
+    allowed = _auth(c, "/public/ping")
+    assert allowed.status_code == 200
+    assert "X-PC-Deny" not in allowed.headers
+
+
+@test
 def excluded_paths_never_challenge():
     app = make_app()
     c = app.test_client()

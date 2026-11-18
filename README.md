@@ -109,11 +109,11 @@ location ^~ /__pc/ {
 
 location / {
     auth_request /__pc/auth;
-    error_page 401 =200 `pc_challenge;
+    error_page 401 =200 @pc_challenge;
     proxy_pass http://backend;
 }
 
-location `pc_challenge {
+location @pc_challenge {
     proxy_pass http://127.0.0.1:8090/__pc/challenge;
     proxy_set_header X-PC-Original-URI $request_uri;
     proxy_set_header Host              $host;
@@ -123,6 +123,43 @@ location `pc_challenge {
 ```
 
 含日志格式、fail-open、多站点的完整配置见 [deploy/nginx.conf.sample](deploy/nginx.conf.sample)。
+
+### 页面模式与 API 模式
+
+被保护的对象不同，配置不可混用。
+
+| 形态 | 适用场景 | 拒绝时返回 | 参考配置 |
+| --- | --- | --- | --- |
+| 页面模式 | 后台入口、登录页；攻击面就是页面本身 | `200` + 质询页 HTML | [deploy/nginx.conf.sample](deploy/nginx.conf.sample) |
+| API 模式 | 单页应用、前后端分离；昂贵的是接口 | `401` + `X-PC-Challenge` 头 | [deploy/nginx.api-mode.conf](deploy/nginx.api-mode.conf) |
+
+页面模式把 401 改写为 200（`error_page 401 =200 @pc_challenge`），浏览器按正常页面处理，监控也不会把质询计入错误率。**该改写不能用于接口**：`fetch` 会判定 `res.ok === true`，随后把质询页 HTML 当 JSON 解析失败，最终报出与真实原因无关的解析错误。
+
+**页面模式不适用于单页应用。** 若页面只是一个 `index.html`，业务数据全部经由 `/api/*` 取得，则页面层的质询没有意义 —— 攻击者不会请求页面。此时应改用 API 模式，把保护点移到接口上。
+
+API 模式下，`/__pc/auth` 的拒绝响应携带 `X-PC-Deny: 1`，`/api/` 用 `auth_request_set` 取出并透出为 `X-PC-Challenge`：
+
+```nginx
+auth_request_set $pc_deny $upstream_http_x_pc_deny;
+add_header X-PC-Challenge $pc_deny always;
+```
+
+变量为空时 nginx 不发送该头，于是两种 401 得以区分：
+
+| 来源 | 响应 | 前端处理 |
+| --- | --- | --- |
+| 判定拒绝 | `401` + `X-PC-Challenge: required` | 跳转质询页 |
+| 后端自身 | `401`，无该头 | 按登录过期处理 |
+
+**这个区分是必要的。** 若混为一谈，应用层 401 会被误认为需要验证，通过质询后重试仍然是 401，再次触发质询，形成死循环。
+
+前端据此分流：
+
+```js
+if (res.status === 401 && res.headers.get('X-PC-Challenge')) {
+  location.href = '/__pc/challenge?rd=' + encodeURIComponent(location.pathname);
+}
+```
 
 集成时需注意三点：
 
