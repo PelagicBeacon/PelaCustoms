@@ -1,0 +1,137 @@
+# ============================================================
+# PelaCustoms · nginx auth_request 参考配置
+# ============================================================
+# 关键约束（这几条错了就不工作，而且报错信息会很难懂）：
+#
+# 1. auth_request 只认三种结果：2xx 放行 / 401 拒绝 / 403 拒绝。
+#    其余任何码（400、500、502…）nginx 都会翻成 500 丢给用户。
+# 2. 质询页必须在【同一个域名】下由 nginx 代理出来，不要 302 到别的域名
+#    —— 同源才能拿到第一方 cookie，也才不会有开放重定向问题。
+# 3. /__pc/ 这个前缀绝不能挂 auth_request，否则判定请求自己会被判定，
+#    直接死循环。
+# 4. 子请求不带 body（proxy_pass_request_body off）。被拦的 POST 过关后
+#    浏览器不会替你重发，body 就没了 —— 用前端预检，别指望 307（见文件末尾）。
+# ------------------------------------------------------------
+
+# 把请求 ID 和判定原因写进 access log。
+# 质询页左下角显示的「请求 ID」就是这里的 $request_id —— 用户报上来能直接 grep。
+# 不配这段也行，只是页面上那项会变成空（PelaCustoms 不会自己编一个）。
+log_format pc '$remote_addr - [$time_local] "$request" $status '
+              'rid=$request_id reason=$upstream_http_x_pc_reason';
+access_log /var/log/nginx/pc.access.log pc;
+
+upstream pelacustoms {
+    server 127.0.0.1:8090;
+    keepalive 16;
+}
+
+upstream my_backend {
+    server 127.0.0.1:3000;
+}
+
+server {
+    listen 80;
+    server_name example.com;
+
+    # ---------- ① 判定子请求：不带 body，只带判定需要的头 ----------
+    location = /__pc/auth {
+        internal;
+        proxy_pass http://pelacustoms/__pc/auth;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+
+        # 原始请求事实：Customs 用它们决定「要不要质询」
+        proxy_set_header X-Original-URI    $request_uri;
+        proxy_set_header X-Original-Method $request_method;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 覆盖而不是追加：不要让客户端自带的头污染判定
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $remote_addr;
+        proxy_set_header User-Agent        $http_user_agent;
+
+        proxy_http_version 1.1;
+        proxy_connect_timeout 1s;
+        proxy_read_timeout 2s;
+    }
+
+    # ---------- ② 质询页与静态资源：绕开判定 ----------
+    location ^~ /__pc/ {
+        proxy_pass http://pelacustoms;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP         $remote_addr;
+        # 质询页上显示的那个 ID 就来自这里，和 access log 里的是同一个
+        proxy_set_header X-Request-ID      $request_id;
+        proxy_http_version 1.1;
+    }
+
+    # ---------- ③ 业务 ----------
+    location / {
+        auth_request /__pc/auth;
+
+        # 把判定结论透给质询页（原因写进日志，方便排查）
+        auth_request_set $pc_reason $upstream_http_x_pc_reason;
+        auth_request_set $pc_level  $upstream_http_x_pc_level;
+
+        # 401 → 在同一个域名下渲染质询页。给 200 是刻意的：
+        # 浏览器当正常页面处理，也不让监控把它算成错误率。
+        error_page 401 =200 @pc_challenge;
+
+        # 403（硬拒绝）保持原样，不给质询机会
+        error_page 403 = @pc_denied;
+
+        proxy_pass http://my_backend;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location @pc_challenge {
+        proxy_pass http://pelacustoms/__pc/challenge;
+        # 原始地址用 header 传，别拼进 proxy_pass 的 query：
+        # $request_uri 自带 ? 和 &，nginx 不会转义。
+        proxy_set_header X-PC-Original-URI  $request_uri;
+        proxy_set_header X-Original-Method  $request_method;
+        proxy_set_header Host               $host;
+        proxy_set_header X-Forwarded-Host   $host;
+        proxy_set_header X-Forwarded-Proto  $scheme;
+        proxy_set_header X-Real-IP          $remote_addr;
+        proxy_set_header X-PC-Risk          $http_x_pc_risk;
+    }
+
+    location @pc_denied {
+        default_type text/plain;
+        return 403 "拒绝了这次访问。";
+    }
+}
+
+# ============================================================
+# 非 GET 请求怎么办
+# ============================================================
+# 上面的配置里，被拦下的 POST 会拿到质询页 HTML —— 但浏览器不会自动重发
+# 那个 POST，表单内容就丢了。
+#
+# 结论：没有能真正保住 body 的办法，用前端预检（见 README「三个必须知道的坑」）。
+#
+# 曾经想过用 307 兜一圈，推演下来不成立：
+#   POST /submit → 401 → 307 → 浏览器重发同一个 POST 到 /__pc/challenge
+#   → 质询页必须渲染 HTML → body 从此交出 → 过关后 JS 跳回去只是一次 GET。
+# 307 只把 body 保住一步，救不了最终的重放。
+#
+# 所以：让 POST 在"发出去之前"就确保有通行证 —— 页面里的 fetch 预检即可。
+#
+# 如果你不在乎丢 body，最简单的是保持上面的 error_page 401 =200 @pc_challenge，
+# 让用户过关后手动重新提交一次。
+
+# ============================================================
+# fail-open 怎么办（不推荐默认开启）
+# ============================================================
+# 如果 PelaCustoms 挂了，auth_request 拿不到结论，nginx 默认会拒绝所有请求。
+# 想让它在故障时放行，可以：
+#      error_page 500 502 504 = @pc_failopen;
+# 但注意：这个 error_page 会把后端自己返回的 5xx 也吃掉再回源一次。
+# 上线前请务必用停掉 PelaCustoms 的方式实测你这一版 nginx 到底吐什么码。

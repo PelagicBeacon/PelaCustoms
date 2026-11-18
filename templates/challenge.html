@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="{{ page.brand.theme }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>正在验证访问 · {{ host }}</title>
+{% set b = page.origin %}
+<link rel="stylesheet" href="{{ b }}/__pc/static/customs.css">
+</head>
+<body class="pc-page">
+<div class="pc-wrap">
+
+  <main class="pc-card" id="pc"
+        data-base="{{ b }}"
+        data-host="{{ host }}"
+        data-pend="{{ page.pend }}"
+        data-challenge="{{ page.challenge }}"
+        data-prefix="{{ page.prefix }}"
+        data-level="{{ page.level }}"
+        data-click="{{ 1 if page.click_gate else 0 }}"
+        data-redirect="{{ page.redirect_url }}">
+
+    {% if page.brand.attribution %}
+    <div class="pc-card__top">
+      <img class="pc-card__logo" src="{{ b }}{{ page.brand.logo }}" alt="" width="18" height="18">
+      <span class="pc-card__brand">{{ page.brand.name }}</span>
+    </div>
+    {% endif %}
+
+    <div class="pc-card__main">
+      <div class="pc-icon" aria-hidden="true">
+        <span class="pc-icon__spin"></span>
+        <svg class="pc-icon__check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg>
+        <svg class="pc-icon__bang" viewBox="0 0 24 24"><path d="M12 5.5v9M12 18.2v.2"/></svg>
+      </div>
+
+      <div class="pc-card__body">
+        <p class="pc-status" id="pc-title">正在检查你的浏览器</p>
+        <p class="pc-note" id="pc-sub">这一步不需要你操作</p>
+        <div class="pc-bar"><i class="pc-bar__fill" id="pc-fill"></i></div>
+
+        <div class="pc-hint" id="pc-hint" hidden>
+          <button class="pc-hint__btn" id="pc-hint-btn" type="button">
+            <span class="pc-hint__box" aria-hidden="true"></span>
+            我不是自动程序
+          </button>
+        </div>
+
+        <button class="pc-retry" id="pc-retry" type="button" hidden>重试</button>
+      </div>
+    </div>
+
+    <div class="pc-card__row">
+      <span class="pc-card__label">站点</span>
+      <span class="pc-host">{{ host }}</span>
+    </div>
+
+    <div class="pc-card__row pc-card__row--foot">
+      <span class="pc-meta">{% if trace %}请求 ID {{ trace }} · {% endif %}v{{ version }}</span>
+      {% if page.brand.attribution %}
+      <span class="pc-links">
+        <a href="{{ page.brand.license }}" rel="noopener noreferrer nofollow" target="_blank">开源协议</a>
+        <span class="pc-dot">·</span>
+        <a href="{{ page.brand.about }}" rel="noopener noreferrer nofollow" target="_blank">关于我们</a>
+      </span>
+      {% endif %}
+    </div>
+  </main>
+
+  <p class="pc-caption">
+    本站启用了自动程序防护。完成这次检查后，你会被自动带回刚才访问的页面，通常只需要一两秒。
+  </p>
+</div>
+
+<noscript>
+  <div class="pc-noscript">这段验证需要启用 JavaScript，请开启后刷新。</div>
+</noscript>
+</body>
+</html>

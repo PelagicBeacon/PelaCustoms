@@ -1,0 +1,137 @@
+# ============================================================
+# PelaCustoms 配置示例
+# 改完不用重启：后台线程按 mtime 轮询热载；写坏了保留上一份可用配置。
+# 校验失败只会让 /__pc/healthz 报 degraded，不会把站打挂。
+# ============================================================
+
+[server]
+# 只监听回环地址，由站点 nginx 反向代理过来。不对外暴露、不需要证书。
+listen = "127.0.0.1:8090"
+
+# 必须留空。质询页在站点自己的域名下由 nginx 代理出来，cookie 是第一方的，
+# 不需要第二个域名、不需要证书、没有 CORS。
+#
+# 「托管模式」（把质询页挂在独立域名上）尚未实现，也不需要：那样通行证会落在
+# 质询域名上，业务站点读不到。设了会直接拒绝启动，不会静默降级。
+public_origin = ""
+
+# PelaCustoms 自身内部出错时怎么办：open 放行 / closed 拒绝。
+# 注意这和「nginx 连不上 PelaCustoms」是两件事，后者在 nginx 层配。
+fail_mode = "closed"
+
+# 密钥建议用环境变量 PC_SECRET 注入，不要写在这里：至少 32 位随机串。
+#   python -c "import secrets; print(secrets.token_hex(32))"
+# secret = ""
+
+reload_interval = "5s"
+
+# 配置自检：这些组合一旦成立，日志里会告警，并在 /__pc/healthz 的 warnings 里露出来：
+#   · listen 不是回环地址（判定点直接暴露公网）
+#   · 站点 enabled 为 true 但 clearance.secure = false（通行证明文传输）
+#   · 没有可用的 PC_SECRET
+# 想让它们变成硬失败（进程起不来），设环境变量 PC_STRICT_CONFIG=1。
+
+# ============================================================
+# 默认策略（所有站点继承，[sites.X] 里只写要覆盖的字段）
+# ============================================================
+[defaults.protect]
+# 触发质询的范围。glob：* 不跨目录，** 跨目录；re: 前缀走正则。
+paths = ["/**"]
+
+# 排除名单先于触发名单判定。注意 /__pc/** 在 nginx 层就该绕开，
+# 这里保留是为了中间件模式和防御性冗余。
+exclude = ["/__pc/**", "/static/**", "/assets/**", "/favicon.ico",
+           "/robots.txt", "/healthz", "/sitemap.xml"]
+
+methods = ["GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"]
+
+[defaults.clearance]
+enabled = true
+name    = "pc_clearance"
+
+# 空 = host-only。多子域想一次通关全站，填 ".example.com"。
+# 注意：填了域，Cookie 会发给该域下所有站点。
+domain = ""
+
+path      = "/"
+secure    = true            # 生产必须 true
+http_only = true            # 同源代理下前端不需要读它
+same_site = "Lax"           # Lax / Strict / None
+
+# 兜底寿命（秒或 "30m" 这种写法）。分档见 ttl_by_level。
+ttl = "30m"
+
+# 分级寿命：静默过关给长一点，强化过关给短一点，否则分级等于没分。
+ttl_by_level = { "1" = "30m", "2" = "15m", "3" = "5m" }
+
+# 绑 IP 默认关：移动网络切换、双栈回退都会让 IP 变，误伤比防御收益大。
+# 真要严格就开，但请先接受「换网要重新验证」。
+bind_ip = false
+
+# 绑 UA 默认开：现代浏览器的 UA 在同一会话里不会变，这个绑定很便宜。
+bind_ua = true
+
+[defaults.challenge]
+# auto = 按请求特征自动选档：
+#   X-PC-Risk: high → 3；非安全方法（POST 等）→ 2；普通 GET → 1
+# 也可以写死 "1" / "2" / "3"。
+level = "auto"
+
+# 质询页本身的存活时间（不是通行证寿命）。防止挂着标签页放了三天再点。
+page_ttl = "90s"
+
+# 期望哈希次数 → 换算成前导 0 位数（20000 → 4 位，约 6.5 万次）。
+# 别调太高：这是用户体验的主要成本。
+difficulty = 20000
+
+# 上游可以用这个请求头把档位往上推（high / medium）。
+# 只能升不能降，所以客户端伪造它没有收益。
+risk_header = "X-PC-Risk"
+
+# L2 起是否要求「手真的在框上」的点击关卡
+click_gate = true
+
+automation_threshold = 6
+track_strict         = false
+track_threshold      = 4
+
+# L3 是否强制最高难度 + 严格轨迹
+strict_level3 = true
+
+[defaults.crawlers]
+# 允许搜索引擎抓取（否则全屏质询会挡住收录）。
+# 注意：这里只按 UA 判断，UA 是可伪造的 —— 真要严格需要反查 IP 归属，
+# 那是另一个话题（见 README「已知限制」）。
+allow_verified = true
+ua_list = ["Googlebot", "bingbot", "Baiduspider", "YandexBot", "DuckDuckBot"]
+
+[defaults.brand]
+name        = "PELAGIC BEACON"
+logo        = "/__pc/static/mark.svg"
+theme       = "dark"        # dark / light / auto
+attribution = true
+title       = "正在检查你的浏览器"
+license_url = "https://github.com/PelagicBeacon/PelaCustoms/blob/main/LICENSE"
+about_url   = "https://github.com/orgs/PelagicBeacon/repositories"
+
+# ============================================================
+# 站点
+# ============================================================
+# enabled 默认是 false：刚接入就全站质询会让人以为坏了，请显式打开。
+[sites."example.com"]
+sitekey = "example-main"
+enabled = true
+
+# 只覆盖写到的字段，其余全部继承 [defaults]
+[sites."example.com.clearance]
+ttl    = "2h"
+domain = ".example.com"
+
+[sites."example.com.challenge]
+difficulty = 40000
+
+# '*' 是所有没匹配上的 Host 的兜底。生产建议别开，
+# 否则任何人把域名解析到你这台机器都能蹭到你的服务。
+[sites."*"]
+sitekey = "default"
+enabled = false

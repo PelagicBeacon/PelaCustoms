@@ -1,0 +1,39 @@
+# PelaCustoms 当前生效的配置。
+# 所有站点默认 enabled = false —— 开箱可跑，但不拦任何人。
+# 完整注释版见 customs.example.toml；密钥请用环境变量 PC_SECRET 注入：
+#   python -c "import secrets; print(secrets.token_hex(32))"
+
+[server]
+listen        = "127.0.0.1:8090"
+public_origin = ""
+fail_mode     = "closed"
+
+[defaults.protect]
+paths   = ["/**"]
+exclude = ["/__pc/**", "/static/**", "/assets/**", "/favicon.ico",
+           "/robots.txt", "/healthz", "/sitemap.xml"]
+
+[defaults.clearance]
+ttl          = "30m"
+ttl_by_level = { "1" = "30m", "2" = "15m", "3" = "5m" }
+name         = "pc_clearance"
+secure       = true
+http_only    = true
+same_site    = "Lax"
+bind_ip      = false
+bind_ua      = true
+
+[defaults.challenge]
+level      = "auto"
+page_ttl   = "90s"
+difficulty = 20000
+click_gate = true
+
+[defaults.brand]
+name  = "PELAGIC BEACON"
+logo  = "/__pc/static/mark.svg"
+theme = "dark"
+
+[sites."*"]
+sitekey = "default"
+enabled = false

@@ -1,0 +1,338 @@
+/*!
+ * PelaCustoms 质询页样式 · MIT
+ *
+ * 设计取向：一个居中、有边界的"验证面板"，而不是一整页铺开的拦截画面。
+ *   · 有 1px 描边的方框，直角小圆角 —— 和 PelaReeflet 的组件语言一致
+ *   · 状态图标块在最左，状态文字在右
+ *   · 站点、请求 ID、版本收在面板内部的两行里
+ *   · 说明文字放在面板外、居中，作为脚注
+ * 刻意不做：巨大域名当标题、贯穿全宽的底部细线 —— 那是别家的辨识特征。
+ */
+:root {
+  --pc-bg: #000;
+  --pc-fg: #f0f0f0;
+  --pc-bd: #3c3c3c;
+  --pc-in: #5e5e5e;
+  --pc-sub: #8a8a8a;
+  --pc-dim: #969696;
+  --pc-accent: #4e8ee0;
+  --pc-ok: #2ea868;
+  --pc-err: #d4544c;
+  --pc-track: #2c2c2c;
+  --pc-panel: #000;
+}
+
+html[data-theme="light"] {
+  --pc-bg: #f4f4f4;
+  --pc-fg: #161616;
+  --pc-bd: #d6d6d6;
+  --pc-in: #c9c9c9;
+  --pc-sub: #6f6f6f;
+  --pc-dim: #8a8a8a;
+  --pc-track: #e6e6e6;
+  --pc-panel: #fff;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-theme="auto"] {
+    --pc-bg: #f4f4f4;
+    --pc-fg: #161616;
+    --pc-bd: #d6d6d6;
+    --pc-in: #c9c9c9;
+    --pc-sub: #6f6f6f;
+    --pc-dim: #8a8a8a;
+    --pc-track: #e6e6e6;
+    --pc-panel: #fff;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body.pc-page {
+  margin: 0;
+  background: var(--pc-bg);
+  color: var(--pc-fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+html[data-theme="dark"] body.pc-page {
+  background: radial-gradient(110% 80% at 50% 42%, #0a0d12 0%, #000 62%);
+}
+
+/* 整页只负责把面板居中 */
+.pc-wrap {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px 20px 40px;
+}
+
+/* ---------------------------------------------------------------- 面板 */
+.pc-card {
+  width: 100%;
+  max-width: 540px;
+  background: var(--pc-panel);
+  border: 1px solid var(--pc-bd);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pc-card__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 18px 0;
+}
+
+.pc-card__logo {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: .95;
+}
+
+.pc-card__brand {
+  color: var(--pc-dim);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.pc-card__main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px 18px;
+}
+
+.pc-card__body { flex: 1 1 auto; min-width: 0; }
+
+/* 状态图标块 */
+.pc-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin-top: 1px;
+  border: 1px solid var(--pc-bd);
+  border-radius: 3px;
+}
+
+.pc-icon__spin {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--pc-in);
+  border-top-color: var(--pc-accent);
+  animation: pc-spin .9s linear infinite;
+  transition: opacity .18s linear;
+}
+
+.pc-icon svg {
+  position: absolute;
+  inset: 0;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity .18s linear;
+}
+
+.pc-icon__check { stroke: var(--pc-ok); }
+.pc-icon__bang { stroke: var(--pc-err); }
+
+@keyframes pc-spin { to { transform: rotate(360deg); } }
+
+.pc-card[data-state="ok"] .pc-icon { border-color: var(--pc-ok); }
+.pc-card[data-state="ok"] .pc-icon__spin { opacity: 0; animation: none; }
+.pc-card[data-state="ok"] .pc-icon__check { opacity: 1; }
+
+.pc-card[data-state="err"] .pc-icon { border-color: var(--pc-err); }
+.pc-card[data-state="err"] .pc-icon__spin { opacity: 0; animation: none; }
+.pc-card[data-state="err"] .pc-icon__bang { opacity: 1; }
+
+.pc-card[data-state="click"] .pc-icon__spin {
+  animation: none;
+  border-color: var(--pc-in);
+}
+
+/* 文案 */
+.pc-status {
+  margin: 0 0 4px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  line-height: 1.35;
+}
+
+.pc-card[data-state="err"] .pc-status { color: var(--pc-err); }
+
+.pc-note {
+  margin: 0 0 12px;
+  min-height: 17px;
+  font-size: 12px;
+  color: var(--pc-sub);
+}
+
+/* 进度 */
+.pc-bar {
+  height: 2px;
+  background: var(--pc-track);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity .2s linear;
+}
+
+.pc-card[data-busy="1"] .pc-bar { opacity: 1; }
+
+.pc-bar__fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--pc-accent);
+  transition: width .2s linear;
+}
+
+.pc-card[data-state="ok"] .pc-bar__fill { background: var(--pc-ok); }
+
+/* 交互关卡 */
+.pc-hint { margin-top: 14px; }
+
+.pc-hint__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 15px;
+  border: 1px solid var(--pc-bd);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--pc-fg);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color .12s linear, background .12s linear;
+}
+
+.pc-hint__btn:hover {
+  border-color: var(--pc-accent);
+  background: rgba(78, 142, 224, .08);
+}
+
+.pc-hint__box {
+  width: 15px;
+  height: 15px;
+  border: 2px solid #7a7a7a;
+  border-radius: 2px;
+}
+
+.pc-retry {
+  margin-top: 14px;
+  padding: 7px 14px;
+  border: 1px solid var(--pc-bd);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--pc-fg);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pc-retry:hover { border-color: var(--pc-accent); }
+
+/* 面板内的两行元信息 */
+.pc-card__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--pc-bd);
+  font-size: 11.5px;
+  color: var(--pc-sub);
+}
+
+.pc-card__label {
+  flex: 0 0 auto;
+  color: var(--pc-dim);
+  font-size: 10.5px;
+  letter-spacing: .6px;
+}
+
+.pc-host {
+  min-width: 0;
+  color: var(--pc-fg);
+  font-weight: 500;
+  word-break: break-all;
+  font-variant-numeric: tabular-nums;
+}
+
+.pc-card__row--foot {
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+  color: var(--pc-dim);
+}
+
+.pc-meta { font-variant-numeric: tabular-nums; }
+
+.pc-links a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(127, 127, 127, .5);
+}
+
+.pc-links a:hover {
+  color: var(--pc-fg);
+  border-bottom-color: currentColor;
+}
+
+.pc-dot { margin: 0 4px; opacity: .5; }
+
+/* 面板外的脚注 */
+.pc-caption {
+  margin: 0;
+  max-width: 540px;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.75;
+  color: var(--pc-sub);
+}
+
+.pc-noscript {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 320px;
+  padding: 16px;
+  border: 1px solid var(--pc-bd);
+  border-radius: 2px;
+  color: var(--pc-sub);
+  text-align: center;
+}
+
+[hidden] { display: none !important; }
+
+@media (max-width: 480px) {
+  .pc-wrap { padding: 20px 14px 28px; }
+  .pc-card__main { gap: 12px; padding: 14px 14px 16px; }
+  .pc-card__top { padding: 12px 14px 0; }
+  .pc-card__row { padding: 9px 14px; }
+}

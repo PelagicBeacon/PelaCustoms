@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PelaCustoms · 质询面板样式预览</title>
+<link rel="stylesheet" href="../static/pc/customs.css">
+<style>
+  body.pc-page { padding: 36px 26px 54px; }
+  .board { max-width: 1160px; margin: 0 auto; }
+  .board h1 { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+  .board .lead { margin: 0 0 26px; font-size: 12px; color: var(--pc-sub); line-height: 1.7; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); gap: 26px; }
+  .cell { display: flex; flex-direction: column; gap: 10px; }
+  .cell .cap { font-size: 11px; color: var(--pc-sub); line-height: 1.6; }
+  .cell .cap b { color: var(--pc-fg); font-weight: 600; }
+  .cell .pc-card { max-width: none; }
+  .cell--light { --pc-bg:#f4f4f4; --pc-fg:#161616; --pc-bd:#d6d6d6; --pc-in:#c9c9c9;
+    --pc-sub:#6f6f6f; --pc-dim:#8a8a8a; --pc-track:#e6e6e6; --pc-panel:#fff; }
+  .cell--light .pc-caption { color: #6f6f6f; }
+</style>
+</head>
+<body class="pc-page">
+<div class="board">
+  <h1>PelaCustoms 质询面板 · 四种状态</h1>
+  <p class="lead">有边界的居中面板：品牌 → 状态图标与文案 → 站点 / 请求 ID → 面板外一句脚注。真实页面由服务端渲染，这里是静态预览。</p>
+
+  <div class="grid">
+    <div class="cell">
+      
+    <div class="pc-card" data-state="working" data-busy="1">
+      <div class="pc-card__top">
+        <img class="pc-card__logo" src="../static/pc/mark.svg" alt="" width="18" height="18">
+        <span class="pc-card__brand">PELAGIC BEACON</span>
+      </div>
+      <div class="pc-card__main">
+        <div class="pc-icon" aria-hidden="true">
+          <span class="pc-icon__spin"></span>
+          <svg class="pc-icon__check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg>
+          <svg class="pc-icon__bang" viewBox="0 0 24 24"><path d="M12 5.5v9M12 18.2v.2"/></svg>
+        </div>
+        <div class="pc-card__body">
+          <p class="pc-status">正在检查你的浏览器</p>
+          <p class="pc-note">这一步不需要你操作</p>
+          <div class="pc-bar"><i class="pc-bar__fill" style="width:62%"></i></div>
+        </div>
+      </div>
+      <div class="pc-card__row">
+        <span class="pc-card__label">站点</span>
+        <span class="pc-host">www.example.com</span>
+      </div>
+      <div class="pc-card__row pc-card__row--foot">
+        <span class="pc-meta">请求 ID 4f2a91c8b3de · v0.1.0</span>
+        <span class="pc-links"><a href="#">开源协议</a><span class="pc-dot">·</span><a href="#">关于我们</a></span>
+      </div>
+    </div>
+      <p class="pc-caption">本站启用了自动程序防护。完成这次检查后，你会被自动带回刚才访问的页面，通常只需要一两秒。</p>
+      <div class="cap"><b>L1 静默</b> · 普通 GET 触发，不点任何东西，算完 PoW 自动返回。</div>
+    </div>
+
+    <div class="cell">
+      
+    <div class="pc-card" data-state="click" data-busy="0">
+      <div class="pc-card__top">
+        <img class="pc-card__logo" src="../static/pc/mark.svg" alt="" width="18" height="18">
+        <span class="pc-card__brand">PELAGIC BEACON</span>
+      </div>
+      <div class="pc-card__main">
+        <div class="pc-icon" aria-hidden="true">
+          <span class="pc-icon__spin"></span>
+          <svg class="pc-icon__check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg>
+          <svg class="pc-icon__bang" viewBox="0 0 24 24"><path d="M12 5.5v9M12 18.2v.2"/></svg>
+        </div>
+        <div class="pc-card__body">
+          <p class="pc-status">请确认你不是自动程序</p>
+          <p class="pc-note">点击下方按钮继续</p>
+          <div class="pc-bar"><i class="pc-bar__fill" style="width:0"></i></div>
+
+          <div class="pc-hint">
+            <button class="pc-hint__btn" type="button"><span class="pc-hint__box"></span>我不是自动程序</button>
+          </div>
+        </div>
+      </div>
+      <div class="pc-card__row">
+        <span class="pc-card__label">站点</span>
+        <span class="pc-host">www.example.com</span>
+      </div>
+      <div class="pc-card__row pc-card__row--foot">
+        <span class="pc-meta">请求 ID 4f2a91c8b3de · v0.1.0</span>
+        <span class="pc-links"><a href="#">开源协议</a><span class="pc-dot">·</span><a href="#">关于我们</a></span>
+      </div>
+    </div>
+      <p class="pc-caption">本站启用了自动程序防护。完成这次检查后，你会被自动带回刚才访问的页面，通常只需要一两秒。</p>
+      <div class="cap"><b>L2 交互</b> · POST 等非安全方法触发。按钮在面板内，不盖遮罩。</div>
+    </div>
+
+    <div class="cell">
+      
+    <div class="pc-card" data-state="ok" data-busy="0">
+      <div class="pc-card__top">
+        <img class="pc-card__logo" src="../static/pc/mark.svg" alt="" width="18" height="18">
+        <span class="pc-card__brand">PELAGIC BEACON</span>
+      </div>
+      <div class="pc-card__main">
+        <div class="pc-icon" aria-hidden="true">
+          <span class="pc-icon__spin"></span>
+          <svg class="pc-icon__check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg>
+          <svg class="pc-icon__bang" viewBox="0 0 24 24"><path d="M12 5.5v9M12 18.2v.2"/></svg>
+        </div>
+        <div class="pc-card__body">
+          <p class="pc-status">验证通过</p>
+          <p class="pc-note">正在返回 www.example.com</p>
+          <div class="pc-bar"><i class="pc-bar__fill" style="width:100%"></i></div>
+        </div>
+      </div>
+      <div class="pc-card__row">
+        <span class="pc-card__label">站点</span>
+        <span class="pc-host">www.example.com</span>
+      </div>
+      <div class="pc-card__row pc-card__row--foot">
+        <span class="pc-meta">请求 ID 4f2a91c8b3de · v0.1.0</span>
+        <span class="pc-links"><a href="#">开源协议</a><span class="pc-dot">·</span><a href="#">关于我们</a></span>
+      </div>
+    </div>
+      <p class="pc-caption">本站启用了自动程序防护。完成这次检查后，你会被自动带回刚才访问的页面，通常只需要一两秒。</p>
+      <div class="cap"><b>通过</b> · 图标块转绿打勾，进度走满，420ms 后 reload。</div>
+    </div>
+
+    <div class="cell">
+      
+    <div class="pc-card" data-state="err" data-busy="0">
+      <div class="pc-card__top">
+        <img class="pc-card__logo" src="../static/pc/mark.svg" alt="" width="18" height="18">
+        <span class="pc-card__brand">PELAGIC BEACON</span>
+      </div>
+      <div class="pc-card__main">
+        <div class="pc-icon" aria-hidden="true">
+          <span class="pc-icon__spin"></span>
+          <svg class="pc-icon__check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg>
+          <svg class="pc-icon__bang" viewBox="0 0 24 24"><path d="M12 5.5v9M12 18.2v.2"/></svg>
+        </div>
+        <div class="pc-card__body">
+          <p class="pc-status">验证未通过</p>
+          <p class="pc-note">验证未通过，请刷新页面后重试</p>
+          <div class="pc-bar"><i class="pc-bar__fill" style="width:0"></i></div>
+
+          <button class="pc-retry" type="button">重试</button>
+        </div>
+      </div>
+      <div class="pc-card__row">
+        <span class="pc-card__label">站点</span>
+        <span class="pc-host">www.example.com</span>
+      </div>
+      <div class="pc-card__row pc-card__row--foot">
+        <span class="pc-meta">请求 ID 4f2a91c8b3de · v0.1.0</span>
+        <span class="pc-links"><a href="#">开源协议</a><span class="pc-dot">·</span><a href="#">关于我们</a></span>
+      </div>
+    </div>
+      <p class="pc-caption">本站启用了自动程序防护。完成这次检查后，你会被自动带回刚才访问的页面，通常只需要一两秒。</p>
+      <div class="cap"><b>失败</b> · 图标块与状态文字转红，出现「重试」。</div>
+    </div>
+
+    <div class="cell cell--light">
+      
+    <div class="pc-card" data-state="working" data-busy="1">
+      <div class="pc-card__top">
+        <img class="pc-card__logo" src="../static/pc/mark.svg" alt="" width="18" height="18">
+        <span class="pc-card__brand">PELAGIC BEACON</span>
+      </div>
+      <div class="pc-card__main">
+        <div class="pc-icon" aria-hidden="true">
+          <span class="pc-icon__spin"></span>
+          <svg class="pc-icon__check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg>
+          <svg class="pc-icon__bang" viewBox="0 0 24 24"><path d="M12 5.5v9M12 18.2v.2"/></svg>
+        </div>
+        <div class="pc-card__body">
+          <p class="pc-status">正在检查你的浏览器</p>
+          <p class="pc-note">这一步不需要你操作</p>
+          <div class="pc-bar"><i class="pc-bar__fill" style="width:38%"></i></div>
+        </div>
+      </div>
+      <div class="pc-card__row">
+        <span class="pc-card__label">站点</span>
+        <span class="pc-host">www.example.com</span>
+      </div>
+      <div class="pc-card__row pc-card__row--foot">
+        <span class="pc-meta">请求 ID 4f2a91c8b3de · v0.1.0</span>
+        <span class="pc-links"><a href="#">开源协议</a><span class="pc-dot">·</span><a href="#">关于我们</a></span>
+      </div>
+    </div>
+      <p class="pc-caption">本站启用了自动程序防护。完成这次检查后，你会被自动带回刚才访问的页面，通常只需要一两秒。</p>
+      <div class="cap"><b>浅色主题</b> · brand.theme = "light"（或 auto 且系统为浅色）。</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+# 演示用配置。真实部署前请把 enabled 改成 false 逐个站点确认。
+
+[server]
+listen        = "127.0.0.1:8091"
+public_origin = ""          # 空 = 代理模式（质询页走 /__pc/ 相对路径）
+fail_mode     = "closed"
+
+[defaults.protect]
+paths   = ["/**"]
+exclude = ["/__pc/**", "/public/**", "/favicon.ico", "/robots.txt"]
+methods = ["GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"]
+
+[defaults.clearance]
+ttl          = "10m"
+ttl_by_level = { "1" = "10m", "2" = "5m", "3" = "2m" }
+name         = "pc_clearance"
+secure       = false        # 本地 http 调试；生产请改回 true
+http_only    = true
+same_site    = "Lax"
+bind_ip      = false
+bind_ua      = true
+
+[defaults.challenge]
+level      = "auto"
+page_ttl   = "90s"
+difficulty = 2000           # 演示用低难度；生产默认 20000
+click_gate = true
+
+[defaults.crawlers]
+allow_verified = true
+ua_list        = ["Googlebot", "bingbot", "Baiduspider"]
+
+[defaults.brand]
+name  = "PELAGIC BEACON"
+logo  = "/__pc/static/mark.svg"
+theme = "dark"
+
+[sites."*"]
+sitekey = "demo"
+enabled = true
